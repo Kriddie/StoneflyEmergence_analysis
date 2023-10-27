@@ -1,0 +1,181 @@
+---
+title: "Emergence_Paper"
+author: "Kriddie"
+date: "2/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## about
+This R markdown is to document manipulation and analyses of stonefly emergence data collected within the Flathead River watershed in 2017
+
+#TO DO ID progress
+* KW has Ided all samples until the 25 of July. about 10 vials left to ID - 2020-02-20
+* still need help confirming ID
+
+
+First, let's import the most current "picked list" and clean up the data
+
+```{r import data}
+#use here package to navigate to folder where your project is
+library(here)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+df <- read.csv(here::here("/Emergence_PickedList_2020-02-18.csv"))
+
+#name Columns
+colnames(df) <-  c("sampleID","SampleMethod","SampleMethodCode","year_collected","RiverCode","FloodplaneCode","SiteCode","TrapNo","SampleNo","CollectionDate","CollectionWeeknum","CollectionDay","Person.ID","IDDate","Person.IDConfirm","VialCount","Genus","Species","male.female.nymph","count")
+
+
+df$SampleMethod <- as.factor(tolower(df$SampleMethod))
+df$SampleMethodCode <- as.factor(toupper(df$SampleMethodCode))
+df$year_collected <- as.integer(df$year_collected)
+df$RiverCode <- as.factor(toupper(df$RiverCode))
+df$FloodplaneCode <- as.factor(toupper(df$FloodplaneCode))
+df$SiteCode <- as.factor(toupper(df$SiteCode))
+df$TrapNo <- as.integer(df$TrapNo)
+df$SampleNo <- as.integer(df$SampleNo)
+df$CollectionDate <- format(strptime(df$CollectionDate, format = "%d-%b-%y"), "%Y-%m-%d")
+df$CollectionWeeknum <- as.integer(df$CollectionWeeknum)
+df$CollectionDay <- as.integer(df$CollectionDay)
+df$IDDate <- format(strptime(df$IDDate, format = "%d-%b-%y"), "%Y-%m-%d")
+df$Genus <- as.factor(tolower(df$Genus))
+df$Species <- as.factor(toupper(df$Species))
+df$male.female.nymph <- as.factor(tolower(df$male.female.nymph))
+df$count <- as.integer(df$count)
+
+
+
+
+```
+## To DO - Data Cleaning
+More data cleaning needed
+*check that sampleID matches with other column entry*
+*Look through data to make sure sampleIDs and date collected make sense*
+*missing dates -> look in field note books*
+*missing species/genus -> look in previous versions of picked list*
+
+## Explore the data by creating pivot plots ##
+
+pivot plots will also be used to run NMDS
+
+
+```{r pivot, echo=FALSE}
+
+#Create pivot plot that summerizes by select variables
+
+pivot <- df %>%
+  select(FloodplaneCode,SiteCode, Species,count) %>%  #select variabls
+  group_by(FloodplaneCode,SiteCode,Species)%>%        #select wich variable you want to group by
+  summarise(TotalCount = sum(count))                                    #select how you want to summerize
+
+#Use pivot plot to create matrix that can be read by vegan package
+pivot2 <- pivot %>%
+  spread(Species,TotalCount)
+
+#remove unnecessary variables (we may need to combine variables here to make a more descriptive column - ie weeknum.by.site)
+pivot2 <-as.data.frame(pivot2)
+pivot2[,1] <- NULL
+#Use first row (key variable) as column name
+rownames(pivot2) <- pivot2[,1]
+pivot2[,1] <- NULL
+
+#get rid of SPP and blanks 
+pivot2 <- select(pivot2, -c(SPP, V1))
+
+
+```
+
+
+
+
+**NMDS Plot**
+An NMDS plot places each site on an X Y coordinate plane. The closer the sites, the more similar the species composition.
+Link to helpful tutorial for nmds using vegan:
+*https://jonlefcheck.net/2012/10/24/nmds-tutorial-in-r/*
+
+
+The folowing two plots are stress plots and NMDS plots respectively. THe following NMDS plot compares species composition at sites by combining all species collected at each site
+
+###NMDS Plot 1
+```{r, message=FALSE, warning=FALSE, nmds, echo=FALSE}
+
+#note - vegan package may be masking functions needed for making pivot plots used by tidyr and dplyr
+
+library(vegan)
+library(MASS)
+
+
+#sort data
+data.by.river <- test.data2[order(test.data2$river, test.data2$floodplane),]
+
+#exploring the data
+abundance.matrix <- data.by.river[,4:54]
+
+test.NMDS=metaMDS(pivot2, # Our community-by-species matrix
+                  k=2) # The number of reduced dimensions
+stressplot(test.NMDS)
+plot(test.NMDS)
+
+
+```
+
+
+```{r, message=FALSE, warning=FALSE, test.data, echo=FALSE}
+
+#note - vegan package may be masking functions needed for making pivot plots used by tidyr and dplyr
+
+library(vegan)
+library(MASS)
+
+
+#sort data
+data.by.river <- test.data2[order(test.data2$river, test.data2$floodplane),]
+
+#exploring the data
+abundance.matrix <- data.by.river[,4:54]
+
+test.NMDS=metaMDS(abundance.matrix, # Our community-by-species matrix
+                  k=2) # The number of reduced dimensions
+stressplot(test.NMDS)
+plot(test.NMDS)
+
+
+```
+
+These next plot adds color and labels for easier plot interpretation
+
+###NMDS Plot 2
+```{r test.NMDS, echo=FALSE}
+#plot with names
+
+ordiplot(test.NMDS,type="n")
+orditorp(test.NMDS,display="species",col="red",air=0.01)
+orditorp(test.NMDS,display="sites",cex=1.25,air=0.01)
+
+#plot with "treatment shapes"
+
+treat=c(rep("MF",8),rep("KA",5),rep("NF",7))
+ordiplot(test.NMDS,type="n")
+ordihull(test.NMDS,groups=treat,draw="polygon",col="grey90",label=F)
+orditorp(test.NMDS,display="species",col="grey20",air=0.01)
+orditorp(test.NMDS,display="sites",col=c(rep("green",8),rep("blue",5),rep("red",7)),
+         air=0.01,cex=1.25)
+
+```
+
+This plot shows how community composition relates to site elevation
+
+###NMDS Plot 3
+```{r environmental gradient, echo=FALSE}
+#plot with environmental gradient
+elevation=data.by.river[,3]
+ordisurf(test.NMDS,elevation,main="",col="forestgreen")
+# Finally, display species on plot
+orditorp(test.NMDS,display="species",col="grey30",air=0.1,
+         cex=1)
+```
