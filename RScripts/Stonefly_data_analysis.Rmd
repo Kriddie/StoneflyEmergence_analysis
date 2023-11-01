@@ -132,7 +132,7 @@ Link to helpful tutorial for nmds using vegan:
 *https://jonlefcheck.net/2012/10/24/nmds-tutorial-in-r/*
 
 
-The folowing two plots are stress plots and NMDS plots respectively. The following NMDS plot compares species composition at sites by combining all species collected at each site
+The following two plots are stress plots and NMDS plots respectively. The following NMDS plot compares species composition at sites by combining all species collected at each site
 
 ###NMDS Plot 1
 ```{r, message=FALSE, warning=FALSE, nmds, echo=FALSE}
@@ -172,79 +172,41 @@ plot(stoneflyDF.spp_NMS, "sites")# Produces distance
 treat=c(rep("KA",5),rep("MF",5),rep("NF",7))
 #new plot
 ordiplot(stoneflyDF.spp_NMS,type="n")
+#draw polygon around similar sites
 ordihull(stoneflyDF.spp_NMS,groups=treat,draw="polygon",col="grey90",label=F)
 orditorp(stoneflyDF.spp_NMS,display="sites",col=c(rep("green",5),rep("blue",5),rep("red",7)),
          air=0.01,cex=1.25)
 
 ```
 
-
-These next plot adds color and labels for easier plot interpretation
+this NMDS plot is based on a matrix of data without calculating relative abundance or distance.
+I'm not sure wich is more appropriate. It is nice that we can also display species names in the one below but it is very messy
 
 ###NMDS Plot 2
 ```{r test.NMDS, echo=FALSE}
+
+
 #plot with names
 
-ordiplot(stoneflyDF.spp_NMS,type="n")
-orditorp(stoneflyDF.spp_NMS,display="sites",cex=1.25,air=0.01)
-orditorp(stoneflyDF.spp_NMS,display="species",col="red",air=0.01)
+test.NMDS=metaMDS(stoneflyDF, # Our community-by-species matrix
+                  k=2) # The number of reduced dimensions
+stressplot(test.NMDS)
+plot(test.NMDS)
+
+ordiplot(test.NMDS,type="n")
+orditorp(test.NMDS,display="sites",cex=1.25,air=0.01)
+orditorp(test.NMDS,display="species",col="red",air=0.01)
  
 
 #plot with "treatment shapes"
 
 treat=c(rep("KA",5),rep("MF",5),rep("NF",7))
-ordiplot(stoneflyDF.spp_NMS,type="n")
-ordihull(stoneflyDF.spp_NMS,groups=treat,draw="polygon",col="grey90",label=F)
-#orditorp(stoneflyDF.spp_NMS,display="species",col="grey20",air=0.01)
-orditorp(stoneflyDF.spp_NMS,display="sites",col=c(rep("green",5),rep("blue",5),rep("red",7)),
+ordiplot(test.NMDS,type="n")
+ordihull(test.NMDS,groups=treat,draw="polygon",col="grey90",label=F)
+orditorp(test.NMDS,display="species",col="grey20",air=0.01)
+orditorp(test.NMDS,display="sites",col=c(rep("green",5),rep("blue",5),rep("red",7)),
          air=0.01,cex=1.25)
 
 
 
-```
-###NMDS Plot 2
-```{r test.NMDS, echo=FALSE}
-#plot with names
-
-ordiplot(stoneflyDF.spp_NMS,type="n")
-orditorp(stoneflyDF.spp_NMS,display="species",col="red",air=0.01)
-orditorp(stoneflyDF.spp_NMS,display="sites",cex=1.25,air=0.01)
-
-#plot with "treatment shapes"
-
-treat=c(rep("KA",5),rep("MF",4),rep("NF",8))
-ordiplot(stoneflyDF.spp_NMS,type="n")
-ordihull(stoneflyDF.spp_NMS,groups=treat,draw="polygon",col="grey90",label=F)
-orditorp(stoneflyDF.spp_NMS,display="species",col="grey20",air=0.01)
-orditorp(stoneflyDF.spp_NMS,display="sites",col=c(rep("green",8),rep("blue",5),rep("red",7)),
-         air=0.01,cex=1.25)
-
-
-example_NMDS <- metaMDS(community_matrix, # Our community-by-species matrix
-                     k=2, trace = 0) # The number of reduced dimensions
-data.scores <- as.data.frame(scores(stoneflyDF.spp_NMS))
-data.scores$site <- rownames(data.scores)
-data.scores$grp <- c(rep("KA",5),rep("MF",4),rep("NF",8))
-species.scores <- as.data.frame(scores(stoneflyDF.spp_NMS, "species"))
-species.scores$species <- rownames(species.scores)
-
-ggplot() + 
-  geom_text(data=stoneflyDF.spp_NMS,aes(x=NMDS1,y=NMDS2,label=species), alpha=1) +  # add the species labels
-  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,shape=as.factor(grp), colour=as.factor(site))) + # add the point markers
-  geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site, colour=as.factor(site)), vjust=0) +  # add the site labels
-  #scale_colour_manual(values=c("1" = "red", "2" = "blue")) +
-  coord_equal() +
-  theme_bw()
-
-```
-This plot shows how community composition relates to site elevation
-
-###NMDS Plot 3
-```{r environmental gradient, echo=FALSE}
-#plot with environmental gradient
-elevation=data.by.river[,3]
-ordisurf(test.NMDS,elevation,main="",col="forestgreen")
-# Finally, display species on plot
-orditorp(test.NMDS,display="species",col="grey30",air=0.1,
-         cex=1)
 ```

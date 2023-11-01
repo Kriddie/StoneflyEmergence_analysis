@@ -135,27 +135,6 @@ plot(test.NMDS)
 ```
 
 
-```{r, message=FALSE, warning=FALSE, test.data, echo=FALSE}
-
-#note - vegan package may be masking functions needed for making pivot plots used by tidyr and dplyr
-
-library(vegan)
-library(MASS)
-
-
-#sort data
-#data.by.river <- df[order(test.data2$river, test.data2$floodplane),]
-
-#exploring the data
-abundance.matrix <- pivot2
-
-test.NMDS=metaMDS(abundance.matrix, # Our community-by-species matrix
-                  k=2) # The number of reduced dimensions
-stressplot(test.NMDS)
-plot(test.NMDS)
-
-
-```
 
 These next plot adds color and labels for easier plot interpretation
 
